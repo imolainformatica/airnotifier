@@ -90,9 +90,11 @@ class PushHandler(APIBaseHandler):
 
             # application specific data
             extra = data.get('extra', {})
-
+            _logger.debug('push with extra dat: '+extra)
             device = data.get('device', DEVICE_TYPE_IOS).lower()
+            _logger.debug('push for device: '+device)
             channel = data.get('channel', 'default')
+            _logger.debug('push for channel: '+channel)
             token = self.db.tokens.find_one({'token': self.token})
 
             if not token:
@@ -123,6 +125,8 @@ class PushHandler(APIBaseHandler):
                 data['apns'].setdefault('badge', data.get('badge', None))
                 data['apns'].setdefault('sound', data.get('sound', None))
                 data['apns'].setdefault('custom', data.get('custom', None))
+                _logger.debug('push for ios data: '+data)
+                _logger.debug('push for ios extra: '+extra)
                 self.get_apns_conn().process(token=self.token, alert=alert, extra=extra, apns=data['apns'])
                 self.send_response(ACCEPTED)
             elif device == DEVICE_TYPE_ANDROID:

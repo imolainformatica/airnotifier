@@ -29,8 +29,10 @@
 from . import PushService
 import json
 import requests
+import logging
 
 GCM_ENDPOINT = 'https://android.googleapis.com/gcm/send'
+_logger = logging.getLogger(__name__)
 
 class GCMException(Exception): pass
 
