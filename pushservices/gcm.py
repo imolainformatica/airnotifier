@@ -107,9 +107,9 @@ class GCMClient(PushService):
         '''
         if not regids:
             raise GCMException("Registration IDs cannot be empty")
-        _logger.debug('prepare android notification %s',data)
+        _logger.info('prepare android notification %s',data)
         payload = self.build_request(regids, data, collapse_key, ttl)
-        _logger.debug('payload android notification %s',payload)
+        _logger.info('payload android notification %s',payload)
         headers = {"content-type":"application/json", 'Authorization': 'key=%s' % self.apikey}
         response = requests.post(self.endpoint, data=payload, headers=headers, verify=False)
 
