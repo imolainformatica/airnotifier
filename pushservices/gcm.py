@@ -29,8 +29,10 @@
 from . import PushService
 import json
 import requests
+import logging
 
 GCM_ENDPOINT = 'https://android.googleapis.com/gcm/send'
+_logger = logging.getLogger(__name__)
 
 class GCMException(Exception): pass
 
@@ -89,7 +91,7 @@ class GCMClient(PushService):
         collapse_key = gcmparam.get('collapse_key', None)
         ttl = gcmparam.get('ttl', None)
         alert = kwargs.get('alert', None)
-        data = gcmparam.get('data', {})
+        data = kwargs.get('extra', {})
         if 'message' not in data:
             data['message'] = kwargs.get('alert', '')
         return self.send(kwargs['token'], data=data, collapse_key=collapse_key, ttl=ttl)
@@ -105,10 +107,11 @@ class GCMClient(PushService):
         '''
         if not regids:
             raise GCMException("Registration IDs cannot be empty")
-
+        _logger.info('prepare android notification %s',data)
         payload = self.build_request(regids, data, collapse_key, ttl)
+        _logger.info('payload android notification %s',payload)
         headers = {"content-type":"application/json", 'Authorization': 'key=%s' % self.apikey}
-        response = requests.post(self.endpoint, data=payload, headers=headers)
+        response = requests.post(self.endpoint, data=payload, headers=headers, verify=False)
 
         if response.status_code == 400:
             raise GCMException('Request could not be parsed as JSON, or it contained invalid fields.')

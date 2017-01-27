@@ -90,9 +90,11 @@ class PushHandler(APIBaseHandler):
 
             # application specific data
             extra = data.get('extra', {})
-
+            _logger.info('push with extra dat: %s',extra)
             device = data.get('device', DEVICE_TYPE_IOS).lower()
+            _logger.info('push for device: %s',device)
             channel = data.get('channel', 'default')
+            _logger.info('push for channel: %s',channel)
             token = self.db.tokens.find_one({'token': self.token})
 
             if not token:
@@ -123,12 +125,15 @@ class PushHandler(APIBaseHandler):
                 data['apns'].setdefault('badge', data.get('badge', None))
                 data['apns'].setdefault('sound', data.get('sound', None))
                 data['apns'].setdefault('custom', data.get('custom', None))
+                _logger.info('push for ios data: %s',data)
+                _logger.info('push for ios extra: %s',extra)
                 self.get_apns_conn().process(token=self.token, alert=alert, extra=extra, apns=data['apns'])
                 self.send_response(ACCEPTED)
             elif device == DEVICE_TYPE_ANDROID:
                 data.setdefault('gcm', {})
                 try:
-                    gcm = self.gcmconnections[self.app['shortname']][0]
+                    gcm = self.gcmconnections[self.app['shortname']][0]    
+                    _logger.info('push for android data: %s',data)
                     response = gcm.process(token=[self.token], alert=data['alert'], extra=data['extra'], gcm=data['gcm'])
                     responsedata = response.json()
                     if responsedata['failure'] == 0:

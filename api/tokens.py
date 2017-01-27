@@ -36,6 +36,9 @@ from routes import route
 from api import APIBaseHandler, EntityBuilder
 from constants import DEVICE_TYPE_IOS
 import binascii
+import logging
+
+_logger = logging.getLogger(__name__)
 
 @route(r"/api/v2/tokens/([^/]+)")
 class TokenV2HandlerGet(APIBaseHandler):
@@ -48,6 +51,7 @@ class TokenV2HandlerGet(APIBaseHandler):
             return
 
         try:
+            _logger.debug('remove token %s',token)
             result = self.db.tokens.remove({'token':token}, safe=True)
             if result['n'] == 0:
                 self.send_response(NOT_FOUND, dict(status='Token does\'t exist'))
@@ -72,15 +76,18 @@ class TokenV2Handler(APIBaseHandler):
 
         if device == DEVICE_TYPE_IOS:
             if len(devicetoken) != 64:
+                _logger.error('token length is not 64')
                 self.send_response(BAD_REQUEST, dict(error='Invalid token'))
                 return
             try:
                 binascii.unhexlify(devicetoken)
             except Exception as ex:
+                _logger.error('exception in parsing token %s',ex)
                 self.send_response(BAD_REQUEST, dict(error='Invalid token'))
-
+        _logger.debug('build token %s',devicetoken)
         token = EntityBuilder.build_token(devicetoken, device, self.appname, channel)
         try:
+            _logger.debug('update token %s',devicetoken)
             result = self.db.tokens.update({'device': device, 'token': devicetoken, 'appname': self.appname}, token, safe=True, upsert=True)
             # result
             # {u'updatedExisting': True, u'connectionId': 47, u'ok': 1.0, u'err': None, u'n': 1}

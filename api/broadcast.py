@@ -38,6 +38,8 @@ from api import APIBaseHandler
 import time
 import logging
 
+_logger = logging.getLogger(__name__)
+
 @route(r"/api/v2/broadcast[\/]?")
 class BroadcastHandler(APIBaseHandler):
     def post(self):
@@ -69,5 +71,5 @@ class BroadcastHandler(APIBaseHandler):
                 apns=data.get('apns', {}),
                 )
         delta_t = time.time() - self._time_start
-        logging.info("Broadcast took time: %sms" % (delta_t * 1000))
+        _logger.info("Broadcast took time: %sms" % (delta_t * 1000))
         self.send_response(ACCEPTED)
