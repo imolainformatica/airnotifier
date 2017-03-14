@@ -65,68 +65,48 @@ class PushHandler(APIBaseHandler):
         instanceid = random.randint(0, count - 1)
         return self.apnsconnections[self.app['shortname']][instanceid]
 
-    def post(self):
-        try:
-            """ Send notifications """
-            if not self.can("send_notification"):
-                self.send_response(FORBIDDEN, dict(error="No permission to send notification"))
-                return
+    def async_multipush(self, data):
 
-            # if request body is json entity
-            data = self.json_decode(self.request.body)
+	    data = self.validate_data(data)
 
-            data = self.validate_data(data)
+        # Hook
+        if 'extra' in data:
+            if 'processor' in data['extra']:
+                try:
+                    proc = import_module('hooks.' + data['extra']['processor'])
+                    data = proc.process_pushnotification_payload(data)
+                except Exception as ex:
+                    self.send_response(BAD_REQUEST, dict(error=str(ex)))
 
-            # Hook
-            if 'extra' in data:
-                if 'processor' in data['extra']:
-                    try:
-                        proc = import_module('hooks.' + data['extra']['processor'])
-                        data = proc.process_pushnotification_payload(data)
-                    except Exception as ex:
-                        self.send_response(BAD_REQUEST, dict(error=str(ex)))
-			
-			tokens = data.get('tokens', None)
-			
-			try:
-				for self.token in tokens:
-					# Start a worker processes.
-					pool = Pool(processes=1)
-					# Method that send multiple push notifications asynchronously calling callback when finished.
-					result = pool.apply_async(async_multipush, [self, data], callback=finish)
-			except Exception as ex:
-			_logger.error(ex)
-        except Exception as ex:
-            import traceback
-            traceback.print_exc()
-            self.send_response(INTERNAL_SERVER_ERROR, dict(error=str(ex)))
+        if not self.token:
+            self.token = data.get('token', None)
 
-	def async_multipush(self, data):
-		# application specific data
-		extra = data.get('extra', {})
-		_logger.info('push with extra dat: %s',extra)
-		device = data.get('device', DEVICE_TYPE_IOS).lower()
-		_logger.info('push for device: %s',device)
-		channel = data.get('channel', 'default')
-		_logger.info('push for channel: %s',channel)
-		token = self.db.tokens.find_one({'token': self.token})
+        # application specific data
+        extra = data.get('extra', {})
+        _logger.info('push with extra dat: %s',extra)
+        device = data.get('device', DEVICE_TYPE_IOS).lower()
+        _logger.info('push for device: %s',device)
+        channel = data.get('channel', 'default')
+        _logger.info('push for channel: %s',channel)
+        token = self.db.tokens.find_one({'token': self.token})
 
-		if not token:
-			try:
-				self.send_response(BAD_REQUEST, dict(error="Unknown token on airnotifier db"))
-				_logger.info('token: %s not found on airnotifier db',token)
-				return
-			except Exception as ex:
-				self.send_response(INTERNAL_SERVER_ERROR, dict(error=str(ex)))
+        if not token:
+            try:
+               self.send_response(BAD_REQUEST, dict(error="Unknown token on airnotifier db"))
+               _logger.info('token: %s not found on airnotifier db',token)
+               return
+            except Exception as ex:
+               self.send_response(INTERNAL_SERVER_ERROR, dict(error=str(ex)))
 
-		if device == DEVICE_TYPE_SMS:
-			data.setdefault('sms', {})
+        if device == DEVICE_TYPE_SMS:
+	                data.setdefault('sms', {})
 			data['sms'].setdefault('to', data.get('token', ''))
 			data['sms'].setdefault('message', data.get('message', ''))
 			sms = self.smsconnections[self.app['shortname']][0]
 			sms.process(token=data['token'], alert=data['alert'], extra=extra, sms=data['sms'])
 			self.send_response(ACCEPTED)
-		elif device == DEVICE_TYPE_IOS:
+	    elif device == DEVICE_TYPE_IOS:
+                        _logger.info('push for alert: %s',data['alert'])
 			# Use sliptlines trick to remove line ending (only for iOs).
 			if type(data['alert']) is not dict:
 				alert = ''.join(data['alert'].splitlines())
@@ -140,10 +120,10 @@ class PushHandler(APIBaseHandler):
 			_logger.info('push for ios extra: %s',extra)
 			self.get_apns_conn().process(token=self.token, alert=alert, extra=extra, apns=data['apns'])
 			self.send_response(ACCEPTED)
-		elif device == DEVICE_TYPE_ANDROID:
+	    elif device == DEVICE_TYPE_ANDROID:
 			data.setdefault('gcm', {})
 			try:
-				gcm = self.gcmconnections[self.app['shortname']][0]    
+				gcm = self.gcmconnections[self.app['shortname']][0]
 				_logger.info('push for android data: %s',data)
 				response = gcm.process(token=[self.token], alert=data['alert'], extra=data['extra'], gcm=data['gcm'])
 				responsedata = response.json()
@@ -157,17 +137,46 @@ class PushHandler(APIBaseHandler):
 				self.send_response(BAD_REQUEST, dict(error=str(ex), regids=ex.regids))
 			except GCMException as ex:
 				self.send_response(INTERNAL_SERVER_ERROR, dict(error=str(ex)))
-		elif device == DEVICE_TYPE_WNS:
+	    elif device == DEVICE_TYPE_WNS:
 			data.setdefault('wns', {})
 			wns = self.wnsconnections[self.app['shortname']][0]
 			wns.process(token=data['token'], alert=data['alert'], extra=extra, wns=data['wns'])
 			self.send_response(ACCEPTED)
-		elif device == DEVICE_TYPE_MPNS:
+	    elif device == DEVICE_TYPE_MPNS:
 			data.setdefault('mpns', {})
 			mpns = self.mpnsconnections[self.app['shortname']][0]
 			mpns.process(token=data['token'], alert=data['alert'], extra=extra, mpns=data['mpns'])
 			self.send_response(ACCEPTED)
-		else:
+	    else:
 			self.send_response(BAD_REQUEST, dict(error='Invalid device type'))
-		logmessage = 'Message length: %s, Access key: %s' %(len(data['alert']), self.appkey)
-		self.add_to_log('%s notification' % self.appname, logmessage)
+	    logmessage = 'Message length: %s, Access key: %s' %(len(data['alert']), self.appkey)
+	    self.add_to_log('%s notification' % self.appname, logmessage)
+
+    #def finish(self):
+    #    return
+
+    def post(self):
+        try:
+            """ Send notifications """
+            if not self.can("send_notification"):
+                self.send_response(FORBIDDEN, dict(error="No permission to send notification"))
+                return
+
+            # if request body is json entity
+            data = self.json_decode(self.request.body)
+
+            notifications = data.get('notifications', None)
+            #pool = Pool(processes=2)
+
+            try:
+                for self.notification in notifications:
+                    self.token = self.notification['token']
+    		    # Method that send multiple push notifications asynchronously calling callback when finished.
+	   	    #result = pool.apply_async(self.async_multipush, [self.notification], callback=self.finish)
+	   	    self.async_multipush(self.notification)
+            except Exception as ex:
+                _logger.error(ex)
+        except Exception as ex:
+            import traceback
+            traceback.print_exc()
+            self.send_response(INTERNAL_SERVER_ERROR, dict(error=str(ex)))

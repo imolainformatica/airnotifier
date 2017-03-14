@@ -2,3 +2,5 @@ airnotifier.conf
 logging.ini
 *.pyc
 .idea
+/db
+/logs
