@@ -67,7 +67,7 @@ class PushHandler(APIBaseHandler):
 
     def async_multipush(self, data):
 
-	    data = self.validate_data(data)
+        data = self.validate_data(data)
 
         # Hook
         if 'extra' in data:
@@ -99,58 +99,58 @@ class PushHandler(APIBaseHandler):
                self.send_response(INTERNAL_SERVER_ERROR, dict(error=str(ex)))
 
         if device == DEVICE_TYPE_SMS:
-	                data.setdefault('sms', {})
-			data['sms'].setdefault('to', data.get('token', ''))
-			data['sms'].setdefault('message', data.get('message', ''))
-			sms = self.smsconnections[self.app['shortname']][0]
-			sms.process(token=data['token'], alert=data['alert'], extra=extra, sms=data['sms'])
-			self.send_response(ACCEPTED)
-	    elif device == DEVICE_TYPE_IOS:
+                    data.setdefault('sms', {})
+            data['sms'].setdefault('to', data.get('token', ''))
+            data['sms'].setdefault('message', data.get('message', ''))
+            sms = self.smsconnections[self.app['shortname']][0]
+            sms.process(token=data['token'], alert=data['alert'], extra=extra, sms=data['sms'])
+            self.send_response(ACCEPTED)
+        elif device == DEVICE_TYPE_IOS:
                         _logger.info('push for alert: %s',data['alert'])
-			# Use sliptlines trick to remove line ending (only for iOs).
-			if type(data['alert']) is not dict:
-				alert = ''.join(data['alert'].splitlines())
-			else:
-				alert = data['alert']
-			data.setdefault('apns', {})
-			data['apns'].setdefault('badge', data.get('badge', None))
-			data['apns'].setdefault('sound', data.get('sound', None))
-			data['apns'].setdefault('custom', data.get('custom', None))
-			_logger.info('push for ios data: %s',data)
-			_logger.info('push for ios extra: %s',extra)
-			self.get_apns_conn().process(token=self.token, alert=alert, extra=extra, apns=data['apns'])
-			self.send_response(ACCEPTED)
-	    elif device == DEVICE_TYPE_ANDROID:
-			data.setdefault('gcm', {})
-			try:
-				gcm = self.gcmconnections[self.app['shortname']][0]
-				_logger.info('push for android data: %s',data)
-				response = gcm.process(token=[self.token], alert=data['alert'], extra=data['extra'], gcm=data['gcm'])
-				responsedata = response.json()
-				if responsedata['failure'] == 0:
-					self.send_response(ACCEPTED)
-			except GCMUpdateRegIDsException as ex:
-				self.send_response(ACCEPTED)
-			except GCMInvalidRegistrationException as ex:
-				self.send_response(BAD_REQUEST, dict(error=str(ex), regids=ex.regids))
-			except GCMNotRegisteredException as ex:
-				self.send_response(BAD_REQUEST, dict(error=str(ex), regids=ex.regids))
-			except GCMException as ex:
-				self.send_response(INTERNAL_SERVER_ERROR, dict(error=str(ex)))
-	    elif device == DEVICE_TYPE_WNS:
-			data.setdefault('wns', {})
-			wns = self.wnsconnections[self.app['shortname']][0]
-			wns.process(token=data['token'], alert=data['alert'], extra=extra, wns=data['wns'])
-			self.send_response(ACCEPTED)
-	    elif device == DEVICE_TYPE_MPNS:
-			data.setdefault('mpns', {})
-			mpns = self.mpnsconnections[self.app['shortname']][0]
-			mpns.process(token=data['token'], alert=data['alert'], extra=extra, mpns=data['mpns'])
-			self.send_response(ACCEPTED)
-	    else:
-			self.send_response(BAD_REQUEST, dict(error='Invalid device type'))
-	    logmessage = 'Message length: %s, Access key: %s' %(len(data['alert']), self.appkey)
-	    self.add_to_log('%s notification' % self.appname, logmessage)
+            # Use sliptlines trick to remove line ending (only for iOs).
+            if type(data['alert']) is not dict:
+                alert = ''.join(data['alert'].splitlines())
+            else:
+                alert = data['alert']
+            data.setdefault('apns', {})
+            data['apns'].setdefault('badge', data.get('badge', None))
+            data['apns'].setdefault('sound', data.get('sound', None))
+            data['apns'].setdefault('custom', data.get('custom', None))
+            _logger.info('push for ios data: %s',data)
+            _logger.info('push for ios extra: %s',extra)
+            self.get_apns_conn().process(token=self.token, alert=alert, extra=extra, apns=data['apns'])
+            self.send_response(ACCEPTED)
+        elif device == DEVICE_TYPE_ANDROID:
+            data.setdefault('gcm', {})
+            try:
+                gcm = self.gcmconnections[self.app['shortname']][0]
+                _logger.info('push for android data: %s',data)
+                response = gcm.process(token=[self.token], alert=data['alert'], extra=data['extra'], gcm=data['gcm'])
+                responsedata = response.json()
+                if responsedata['failure'] == 0:
+                    self.send_response(ACCEPTED)
+            except GCMUpdateRegIDsException as ex:
+                self.send_response(ACCEPTED)
+            except GCMInvalidRegistrationException as ex:
+                self.send_response(BAD_REQUEST, dict(error=str(ex), regids=ex.regids))
+            except GCMNotRegisteredException as ex:
+                self.send_response(BAD_REQUEST, dict(error=str(ex), regids=ex.regids))
+            except GCMException as ex:
+                self.send_response(INTERNAL_SERVER_ERROR, dict(error=str(ex)))
+        elif device == DEVICE_TYPE_WNS:
+            data.setdefault('wns', {})
+            wns = self.wnsconnections[self.app['shortname']][0]
+            wns.process(token=data['token'], alert=data['alert'], extra=extra, wns=data['wns'])
+            self.send_response(ACCEPTED)
+        elif device == DEVICE_TYPE_MPNS:
+            data.setdefault('mpns', {})
+            mpns = self.mpnsconnections[self.app['shortname']][0]
+            mpns.process(token=data['token'], alert=data['alert'], extra=extra, mpns=data['mpns'])
+            self.send_response(ACCEPTED)
+        else:
+            self.send_response(BAD_REQUEST, dict(error='Invalid device type'))
+        logmessage = 'Message length: %s, Access key: %s' %(len(data['alert']), self.appkey)
+        self.add_to_log('%s notification' % self.appname, logmessage)
 
     #def finish(self):
     #    return
@@ -171,9 +171,9 @@ class PushHandler(APIBaseHandler):
             try:
                 for self.notification in notifications:
                     self.token = self.notification['token']
-    		    # Method that send multiple push notifications asynchronously calling callback when finished.
-	   	    #result = pool.apply_async(self.async_multipush, [self.notification], callback=self.finish)
-	   	    self.async_multipush(self.notification)
+                # Method that send multiple push notifications asynchronously calling callback when finished.
+            #result = pool.apply_async(self.async_multipush, [self.notification], callback=self.finish)
+            self.async_multipush(self.notification)
             except Exception as ex:
                 _logger.error(ex)
         except Exception as ex:
