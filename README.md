@@ -79,7 +79,7 @@ Content-Type: application/json
 }
 ```
 
-### Sending broadcast type notification to windows 8.1 devices
+### Sending multiple push notification with one call
 ```
 POST /api/v2/multipush HTTP/1.1
 X-AN-APP-NAME: moodlemobileapp
