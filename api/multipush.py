@@ -99,7 +99,7 @@ class PushHandler(APIBaseHandler):
                self.send_response(INTERNAL_SERVER_ERROR, dict(error=str(ex)))
 
         if device == DEVICE_TYPE_SMS:
-                    data.setdefault('sms', {})
+            data.setdefault('sms', {})
             data['sms'].setdefault('to', data.get('token', ''))
             data['sms'].setdefault('message', data.get('message', ''))
             sms = self.smsconnections[self.app['shortname']][0]
