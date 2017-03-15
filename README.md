@@ -79,6 +79,52 @@ Content-Type: application/json
 }
 ```
 
+### Sending broadcast type notification to windows 8.1 devices
+```
+POST /api/v2/multipush HTTP/1.1
+X-AN-APP-NAME: moodlemobileapp
+X-AN-APP-KEY: b2b56dbb
+Content-Type: application/json
+{ 
+ "notifications":[
+	{
+	    "device": "ios",
+	    "token": "9b1a98420d08eb3331d98ff73ada3a9bdacc9a3bde25743d4af823d8ab83009c",
+	    "alert": "Grazie per averci favorito",
+	    "sound": "default",
+	    "badge": 1,
+		"custom": {
+			"registration-ids": "9b1a98420d08eb3331d98ff73ada3a9bdacc9a3bde25743d4af823d8ab83009c",
+			"data": {
+				"body": "Grazie per averci favorito",
+				"chatID": "374hf9cr8er8r93jc943948cijvdndimdi67fd78sf9",
+				"data-from": "LocalFocus",
+				"to": "Monical",
+				"type": "broadcast"
+			}
+		}
+	},
+	{
+	    "device": "android",
+	    "token": "dUDjHeeJD-A:APA91bHeZmFcZUieSoArbfXelRd2KK8Em7YGXMblN3C7ekzBvOPXNCL3AfS2q7-P3v_mPPNZnY6YgDS61kKd2CWfbEMbTywxvcZLEI6M64zhulqjmm1KJOIfNx1mQpAh1vSvsxPlzSQo",
+	    "alert": "Grazie per averci favorito",
+	    "sound": "default",
+	    "badge": 1,
+		"extra": {
+			"registration-ids": "dUDjHeeJD-A:APA91bHeZmFcZUieSoArbfXelRd2KK8Em7YGXMblN3C7ekzBvOPXNCL3AfS2q7-P3v_mPPNZnY6YgDS61kKd2CWfbEMbTywxvcZLEI6M64zhulqjmm1KJOIfNx1mQpAh1vSvsxPlzSQo",
+			"data": {
+				"body": "Grazie per averci favorito",
+				"chatID": "ceiuef9h8934c39m0c9mf9i0ki3rdk903mdr989384m",
+				"data-from": "LocalFocus",
+				"to": "Harambe",
+				"type": "broadcast"
+			}
+		}
+	}
+  ]	
+}
+```
+
 ## Installation
 
 Please read [Installation guide](https://github.com/airnotifier/airnotifier/wiki/Installation)
