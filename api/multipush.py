@@ -106,7 +106,7 @@ class PushHandler(APIBaseHandler):
             sms.process(token=data['token'], alert=data['alert'], extra=extra, sms=data['sms'])
             self.send_response(ACCEPTED)
         elif device == DEVICE_TYPE_IOS:
-                        _logger.info('push for alert: %s',data['alert'])
+            _logger.info('push for alert: %s',data['alert'])
             # Use sliptlines trick to remove line ending (only for iOs).
             if type(data['alert']) is not dict:
                 alert = ''.join(data['alert'].splitlines())
