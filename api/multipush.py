@@ -172,8 +172,8 @@ class PushHandler(APIBaseHandler):
                 for self.notification in notifications:
                     self.token = self.notification['token']
                 # Method that send multiple push notifications asynchronously calling callback when finished.
-            #result = pool.apply_async(self.async_multipush, [self.notification], callback=self.finish)
-            self.async_multipush(self.notification)
+                #result = pool.apply_async(self.async_multipush, [self.notification], callback=self.finish)
+                self.async_multipush(self.notification)
             except Exception as ex:
                 _logger.error(ex)
         except Exception as ex:
