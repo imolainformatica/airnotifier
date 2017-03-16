@@ -48,6 +48,10 @@ _logger = logging.getLogger(__name__)
 
 @route(r"/api/v2/multipush[\/]?")
 class PushHandler(APIBaseHandler):
+
+    successedPush = 0
+    failedPush = 0   
+
     def validate_data(self, data):
         data.setdefault('channel', 'default')
         data.setdefault('sound', None)
@@ -104,7 +108,7 @@ class PushHandler(APIBaseHandler):
             data['sms'].setdefault('message', data.get('message', ''))
             sms = self.smsconnections[self.app['shortname']][0]
             sms.process(token=data['token'], alert=data['alert'], extra=extra, sms=data['sms'])
-            self.send_response(ACCEPTED)
+            #self.send_response(ACCEPTED)
         elif device == DEVICE_TYPE_IOS:
             _logger.info('push for alert: %s',data['alert'])
             # Use sliptlines trick to remove line ending (only for iOs).
@@ -119,7 +123,8 @@ class PushHandler(APIBaseHandler):
             _logger.info('push for ios data: %s',data)
             _logger.info('push for ios extra: %s',extra)
             self.get_apns_conn().process(token=self.token, alert=alert, extra=extra, apns=data['apns'])
-            self.send_response(ACCEPTED)
+            self.successedPush += 1
+            #self.send_response(ACCEPTED)
         elif device == DEVICE_TYPE_ANDROID:
             data.setdefault('gcm', {})
             try:
@@ -127,31 +132,41 @@ class PushHandler(APIBaseHandler):
                 _logger.info('push for android data: %s',data)
                 response = gcm.process(token=[self.token], alert=data['alert'], extra=data['extra'], gcm=data['gcm'])
                 responsedata = response.json()
-                if responsedata['failure'] == 0:
-                    self.send_response(ACCEPTED)
+                self.successedPush += 1
+                #if responsedata['failure'] == 0:
+                    #self.send_response(ACCEPTED)
             except GCMUpdateRegIDsException as ex:
-                self.send_response(ACCEPTED)
+                _logger.error('ACCEPTED')
+                self.failedPush += 1
+                #self.send_response(ACCEPTED)
             except GCMInvalidRegistrationException as ex:
-                self.send_response(BAD_REQUEST, dict(error=str(ex), regids=ex.regids))
+                _logger.error('GCMInvalidRegistrationException : %s',ex)
+                self.failedPush += 1
+                #self.send_response(BAD_REQUEST, dict(error=str(ex), regids=ex.regids))
             except GCMNotRegisteredException as ex:
-                self.send_response(BAD_REQUEST, dict(error=str(ex), regids=ex.regids))
+                _logger.error('GCMNotRegisteredException : %s',ex)
+                self.failedPush += 1
+                #self.send_response(BAD_REQUEST, dict(error=str(ex), regids=ex.regids))
             except GCMException as ex:
-                self.send_response(INTERNAL_SERVER_ERROR, dict(error=str(ex)))
+                _logger.error('GCMException : %s',ex)
+                self.failedPush += 1
+                #self.send_response(INTERNAL_SERVER_ERROR, dict(error=str(ex)))
         elif device == DEVICE_TYPE_WNS:
             data.setdefault('wns', {})
             wns = self.wnsconnections[self.app['shortname']][0]
             wns.process(token=data['token'], alert=data['alert'], extra=extra, wns=data['wns'])
-            self.send_response(ACCEPTED)
+            #self.send_response(ACCEPTED)
         elif device == DEVICE_TYPE_MPNS:
             data.setdefault('mpns', {})
             mpns = self.mpnsconnections[self.app['shortname']][0]
             mpns.process(token=data['token'], alert=data['alert'], extra=extra, mpns=data['mpns'])
-            self.send_response(ACCEPTED)
+            #self.send_response(ACCEPTED)
         else:
             self.send_response(BAD_REQUEST, dict(error='Invalid device type'))
         logmessage = 'Message length: %s, Access key: %s' %(len(data['alert']), self.appkey)
         self.add_to_log('%s notification' % self.appname, logmessage)
 
+    # Funzione per la callback (quando si implementerà la versione async call)
     #def finish(self):
     #    return
 
@@ -166,14 +181,23 @@ class PushHandler(APIBaseHandler):
             data = self.json_decode(self.request.body)
 
             notifications = data.get('notifications', None)
+            
+            #TODO implementazione asyncrona non funziona ancora
             #pool = Pool(processes=2)
+            
+            _logger.info('Le notifiche sono %d',len(notifications))
 
             try:
                 for self.notification in notifications:
                     self.token = self.notification['token']
-                    # Method that send multiple push notifications asynchronously calling callback when finished.
+                    # Method that send multiple push notifications asynchronously calling callback when finished.(non funziona ancora)
                     #result = pool.apply_async(self.async_multipush, [self.notification], callback=self.finish)
                     self.async_multipush(self.notification)
+                response = {}
+                response['successed'] = self.successedPush
+                response['failed'] = self.failedPush
+                _logger.info(response)
+                self.send_response(ACCEPTED, response)
             except Exception as ex:
                 _logger.error(ex)
         except Exception as ex:
