@@ -61,8 +61,9 @@ class PushHandler(APIBaseHandler):
 
     def get_apns_conn(self):
         if not self.apnsconnections.has_key(self.app['shortname']):
-            self.send_response(INTERNAL_SERVER_ERROR, dict(error="APNs is offline"))
-            return
+		    _logger.error('APNs is offline')
+            #self.send_response(INTERNAL_SERVER_ERROR, dict(error="APNs is offline"))
+            #return
         count = len(self.apnsconnections[self.app['shortname']])
         # Find an APNS instance
         random.seed(time.time())
@@ -80,7 +81,8 @@ class PushHandler(APIBaseHandler):
                     proc = import_module('hooks.' + data['extra']['processor'])
                     data = proc.process_pushnotification_payload(data)
                 except Exception as ex:
-                    self.send_response(BAD_REQUEST, dict(error=str(ex)))
+				    _logger.error(ex)
+                    #self.send_response(BAD_REQUEST, dict(error=str(ex)))
 
         if not self.token:
             self.token = data.get('token', None)
@@ -96,11 +98,12 @@ class PushHandler(APIBaseHandler):
 
         if not token:
             try:
-               self.send_response(BAD_REQUEST, dict(error="Unknown token on airnotifier db"))
-               _logger.info('token: %s not found on airnotifier db',token)
-               return
+               #self.send_response(BAD_REQUEST, dict(error="Unknown token on airnotifier db"))
+               _logger.error('token: %s not found on airnotifier db',token)
+               #return
             except Exception as ex:
-               self.send_response(INTERNAL_SERVER_ERROR, dict(error=str(ex)))
+			   _logger.error(ex)
+               #self.send_response(INTERNAL_SERVER_ERROR, dict(error=str(ex)))
 
         if device == DEVICE_TYPE_SMS:
             data.setdefault('sms', {})
@@ -162,7 +165,8 @@ class PushHandler(APIBaseHandler):
             mpns.process(token=data['token'], alert=data['alert'], extra=extra, mpns=data['mpns'])
             #self.send_response(ACCEPTED)
         else:
-            self.send_response(BAD_REQUEST, dict(error='Invalid device type'))
+		    _logger.error('Invalid device type')
+            #self.send_response(BAD_REQUEST, dict(error='Invalid device type'))
         logmessage = 'Message length: %s, Access key: %s' %(len(data['alert']), self.appkey)
         self.add_to_log('%s notification' % self.appname, logmessage)
 
