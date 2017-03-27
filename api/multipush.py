@@ -82,6 +82,7 @@ class PushHandler(APIBaseHandler):
                     data = proc.process_pushnotification_payload(data)
                 except Exception as ex:
                     _logger.error(ex)
+                    return
                     #self.send_response(BAD_REQUEST, dict(error=str(ex)))
 
         if not self.token:
