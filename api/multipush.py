@@ -61,7 +61,7 @@ class PushHandler(APIBaseHandler):
 
     def get_apns_conn(self):
         if not self.apnsconnections.has_key(self.app['shortname']):
-	        _logger.error('APNs is offline')
+            _logger.error('APNs is offline')
             #self.send_response(INTERNAL_SERVER_ERROR, dict(error="APNs is offline"))
             return
         count = len(self.apnsconnections[self.app['shortname']])
@@ -81,7 +81,7 @@ class PushHandler(APIBaseHandler):
                     proc = import_module('hooks.' + data['extra']['processor'])
                     data = proc.process_pushnotification_payload(data)
                 except Exception as ex:
-		            _logger.error(ex)
+                    _logger.error(ex)
                     #self.send_response(BAD_REQUEST, dict(error=str(ex)))
 
         if not self.token:
@@ -102,7 +102,7 @@ class PushHandler(APIBaseHandler):
                _logger.error('token: %s not found on airnotifier db',token)
                return
             except Exception as ex:
-	           _logger.error(ex)
+               _logger.error(ex)
                #self.send_response(INTERNAL_SERVER_ERROR, dict(error=str(ex)))
                return
 
