@@ -61,9 +61,9 @@ class PushHandler(APIBaseHandler):
 
     def get_apns_conn(self):
         if not self.apnsconnections.has_key(self.app['shortname']):
-		    _logger.error('APNs is offline')
+	        _logger.error('APNs is offline')
             #self.send_response(INTERNAL_SERVER_ERROR, dict(error="APNs is offline"))
-            #return
+            return
         count = len(self.apnsconnections[self.app['shortname']])
         # Find an APNS instance
         random.seed(time.time())
@@ -81,7 +81,7 @@ class PushHandler(APIBaseHandler):
                     proc = import_module('hooks.' + data['extra']['processor'])
                     data = proc.process_pushnotification_payload(data)
                 except Exception as ex:
-				    _logger.error(ex)
+		            _logger.error(ex)
                     #self.send_response(BAD_REQUEST, dict(error=str(ex)))
 
         if not self.token:
@@ -100,10 +100,11 @@ class PushHandler(APIBaseHandler):
             try:
                #self.send_response(BAD_REQUEST, dict(error="Unknown token on airnotifier db"))
                _logger.error('token: %s not found on airnotifier db',token)
-               #return
+               return
             except Exception as ex:
-			   _logger.error(ex)
+	           _logger.error(ex)
                #self.send_response(INTERNAL_SERVER_ERROR, dict(error=str(ex)))
+               return
 
         if device == DEVICE_TYPE_SMS:
             data.setdefault('sms', {})
@@ -139,8 +140,8 @@ class PushHandler(APIBaseHandler):
                 #if responsedata['failure'] == 0:
                     #self.send_response(ACCEPTED)
             except GCMUpdateRegIDsException as ex:
-                _logger.error('ACCEPTED')
-                self.failedPush += 1
+                _logger.info('ACCEPTED - GCMUpdateRegIDsException: %s', ex)
+                self.successedPush += 1
                 #self.send_response(ACCEPTED)
             except GCMInvalidRegistrationException as ex:
                 _logger.error('GCMInvalidRegistrationException : %s',ex)
@@ -165,7 +166,7 @@ class PushHandler(APIBaseHandler):
             mpns.process(token=data['token'], alert=data['alert'], extra=extra, mpns=data['mpns'])
             #self.send_response(ACCEPTED)
         else:
-		    _logger.error('Invalid device type')
+            _logger.error('Invalid device type')
             #self.send_response(BAD_REQUEST, dict(error='Invalid device type'))
         logmessage = 'Message length: %s, Access key: %s' %(len(data['alert']), self.appkey)
         self.add_to_log('%s notification' % self.appname, logmessage)
